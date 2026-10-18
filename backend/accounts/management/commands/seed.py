@@ -1,3 +1,4 @@
+import os
 import random
 import secrets
 from datetime import date, timedelta
@@ -93,7 +94,7 @@ class Command(BaseCommand):
                 setattr(st, k, v)
         st.save()
         if not User.objects.filter(is_superuser=True).exists():
-            pw = secrets.token_urlsafe(9)
+            pw = os.environ.get("ADMIN_PASSWORD") or secrets.token_urlsafe(9)
             u = User.objects.create_superuser("admin", password=pw, first_name="Administrateur")
             Profile.objects.create(user=u, role="ADMIN")
             self.stdout.write(self.style.WARNING(f"Compte créé : admin / {pw}  (notez-le, il ne sera plus affiché ; changez-le dans Paramètre)"))

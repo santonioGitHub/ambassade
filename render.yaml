@@ -1,0 +1,50 @@
+databases:
+  - name: ambassade-db
+    plan: free
+    databaseName: ambassade
+    user: ambassade
+
+services:
+  # API Django
+  - type: web
+    name: ambassade-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: gunicorn config.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "0"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ambassade-db
+          property: connectionString
+
+  # Frontend React (Vite). Le navigateur appelle /api et /media sur le même domaine :
+  # Render relaie ces chemins vers l'API (aucun CORS à configurer, le code React reste inchangé).
+  # Si l'URL de l'API n'est pas https://ambassade-api.onrender.com, corrigez les deux destinations.
+  - type: web
+    name: ambassade-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: rm -rf node_modules && npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://ambassade-api.onrender.com/api/*
+      - type: rewrite
+        source: /media/*
+        destination: https://ambassade-api.onrender.com/media/*
+      - type: rewrite
+        source: /*
+        destination: /index.html

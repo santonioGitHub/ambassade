@@ -22,7 +22,13 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
 ]
 ROOT_URLCONF = "config.urls"
-if os.environ.get("DB_NAME"):  # PostgreSQL si DB_NAME est défini, sinon SQLite
+WSGI_APPLICATION = "config.wsgi.application"
+# HTTPS derrière le proxy de Render
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+if os.environ.get("DATABASE_URL"):  # PostgreSQL fourni par Render
+    import dj_database_url
+    DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
+elif os.environ.get("DB_NAME"):  # PostgreSQL si DB_NAME est défini, sinon SQLite
     DATABASES = {"default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ["DB_NAME"],
